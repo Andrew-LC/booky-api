@@ -7,6 +7,8 @@ import (
 	"bookmark-api/utils"
 )
 
+type ctxKeyUserID struct{}
+
 func JWTMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
@@ -28,8 +30,19 @@ func JWTMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, "userID", claims.UserID)
+        ctx := r.Context()
+        ctx = context.WithValue(ctx, ctxKeyUserID{}, claims.UserID)
+		// check if you can do
+		// next(w, r.WithContext(ctx))
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func UserIDFromContext(r *http.Request) (uint, bool) {
+    v := r.Context().Value(ctxKeyUserID{})
+    if v == nil {
+        return 0, false
+    }
+    id, ok := v.(uint)
+    return id, ok
 }

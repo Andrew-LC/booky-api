@@ -7,9 +7,11 @@ import (
 	"bookmark-api/utils"
 	"bookmark-api/model"
         "golang.org/x/crypto/bcrypt"
+	middleware "bookmark-api/middlewares"
 )
 
 func SignUp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	var creds struct {
 		Email string `json:"email"`
 		Password string `json:"password"`
@@ -42,6 +44,7 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 
 
 func Login(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
 	var creds struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -69,7 +72,23 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]string{"token": token})
+    json.NewEncoder(w).Encode(map[string]string{"token": token})
+}
+
+func DeleteAccount(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	if err := model.DeleteUserAccount(userID); err != nil {
+		http.Error(w, "Failed to delete account", http.StatusInternalServerError)
+		return
+	}
+	
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "Account deleted")
 }
 
 func LogOut(w http.ResponseWriter, r *http.Request) {

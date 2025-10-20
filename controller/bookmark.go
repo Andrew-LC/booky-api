@@ -5,21 +5,22 @@ import (
 	"fmt"
 	"net/http"
 	"bookmark-api/model"
+	middleware "bookmark-api/middlewares"
 )
 
 func CreateBookmark(w http.ResponseWriter, r *http.Request) {
-	var input struct {
-		url     string    `json:"email"`
-		title   string    `json:"title"`
-		Notes   string    `json:"notes"`
-		Tags    []string  `json:"string"`
+	type createBookmarkRequest struct {
+		URL   string   `json:"url"`
+		Title string   `json:"title"`
+		Notes string   `json:"notes"`
+		Tags  []string `json:"tags"`
 	}
-	userIDVal := r.Context().Value("userID")
-	if userIDVal == nil {
+	var input createBookmarkRequest
+	userID, ok := middleware.UserIDFromContext(r)
+	if !ok {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	userID := userIDVal.(uint)
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
@@ -28,8 +29,8 @@ func CreateBookmark(w http.ResponseWriter, r *http.Request) {
 
 	bookmark := model.Bookmark{
 		UserID: userID,
-		URL:    input.url,
-		Title:  input.title,
+		URL:    input.URL,
+		Title:  input.Title,
 		Notes:  input.Notes,
 		Tags:   input.Tags,
 	}
@@ -45,12 +46,11 @@ func CreateBookmark(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetBookmarks(w http.ResponseWriter, r *http.Request) {
-	userIDVal := r.Context().Value("userID")
-	if userIDVal == nil {
+	userID, ok := middleware.UserIDFromContext(r)
+	if !ok {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	userID := userIDVal.(uint)
 
 	bookmarks, err := model.GetBookmarks(userID)
 	if err != nil {
@@ -63,13 +63,64 @@ func GetBookmarks(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func DeleteBookmark(w http.ResponseWriter, r *http.Request) {
-	userIDVal := r.Context().Value("userID")
-	if userIDVal == nil {
+func UpdateBookmark(w http.ResponseWriter, r *http.Request) {
+	type updateBookmarkRequest struct {
+		URL   *string   `json:"url"`
+		Title *string   `json:"title"`
+		Notes *string   `json:"notes"`
+		Tags  *[]string `json:"tags"`
+	}
+	var input updateBookmarkRequest
+	userID, ok := middleware.UserIDFromContext(r)
+	if !ok {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	userID := userIDVal.(uint)
+
+	idStr := r.PathValue("id")
+	if idStr == "" {
+		http.Error(w, "Bookmark ID required", http.StatusBadRequest)
+		return
+	}
+	var id uint
+	fmt.Sscanf(idStr, "%d", &id)
+
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
+		return
+	}
+
+	updates := make(map[string]interface{})
+	if input.URL != nil {
+		updates["url"] = *input.URL
+	}
+	if input.Title != nil {
+		updates["title"] = *input.Title
+	}
+	if input.Notes != nil {
+		updates["notes"] = *input.Notes
+	}
+	if input.Tags != nil {
+		updates["tags"] = *input.Tags
+	}
+
+	updated, err := model.UpdateBookmark(userID, id, updates)
+	if err != nil {
+		http.Error(w, "Failed to update bookmark", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(updated)
+}
+
+
+func DeleteBookmark(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	idStr := r.PathValue("id")
 	if idStr == "" {

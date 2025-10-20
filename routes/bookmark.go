@@ -8,9 +8,10 @@ import (
 func BookmarkRoutes() *http.ServeMux {
 	mux := http.NewServeMux()
 	
-	mux.HandleFunc("POST /create", controller.CreateBookmark)
-	mux.HandleFunc("GET /all", controller.GetBookmarks)
-	mux.HandleFunc("DELETE /delete/{id}", controller.DeleteBookmark)
+	mux.HandleFunc("POST /", controller.CreateBookmark)
+	mux.HandleFunc("GET /", controller.GetBookmarks)
+	mux.HandleFunc("DELETE /{id}", controller.DeleteBookmark)
+	mux.HandleFunc("PUT /{id}", controller.UpdateBookmark)
 	
 	return mux
 }

@@ -5,6 +5,11 @@ import (
 	"bookmark-api/db"
 )
 
+type Account interface {
+	CreateAccount() error
+	DeleteAccount() error
+} 
+
 type User struct {
 	ID        uint       `gorm:"primaryKey"`
 	Username  string     `gorm:"unique;not null"`
@@ -28,4 +33,13 @@ func GetUserByEmail(email string) *User {
 		return nil
 	}
 	return &user
+}
+
+func DeleteUserAccount(userID uint) error {
+	db := db.GetDB()
+	var user User
+	if err := db.Where("UserID = ?", userID).Delete(&user).Error; err != nil {
+		return err
+	}
+	return nil
 }
