@@ -4,9 +4,9 @@ services:
   db:
     image: postgres:15
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: bookmarkdb
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -18,13 +18,13 @@ services:
   api:
     build: .
     environment:
-      PORT: 8080
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_DBNAME: bookmarkdb
-      DB_SSLMODE: disable
+      PORT: ${PORT}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DBNAME: ${DB_DBNAME}
+      DB_SSLMODE: ${DB_SSLMODE}
       INSTANCE_ID: "${HOSTNAME}"
     depends_on:
       db:
