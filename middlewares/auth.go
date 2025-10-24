@@ -32,8 +32,6 @@ func JWTMiddleware(next http.Handler) http.Handler {
 
         ctx := r.Context()
         ctx = context.WithValue(ctx, ctxKeyUserID{}, claims.UserID)
-		// check if you can do
-		// next(w, r.WithContext(ctx))
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

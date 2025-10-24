@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"bookmark-api/model"
 	middleware "bookmark-api/middlewares"
+	util "bookmark-api/utils"
 )
 
 func CreateBookmark(w http.ResponseWriter, r *http.Request) {
 	type createBookmarkRequest struct {
 		URL   string   `json:"url"`
-		Title string   `json:"title"`
 		Notes string   `json:"notes"`
 		Tags  []string `json:"tags"`
 	}
@@ -27,11 +27,19 @@ func CreateBookmark(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	data, err := util.ExtractData(input.URL)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Failed to fetch url", http.StatusBadRequest)
+		return
+	}
+
 	bookmark := model.Bookmark{
 		UserID: userID,
 		URL:    input.URL,
-		Title:  input.Title,
+		Title:  data.Title,
 		Notes:  input.Notes,
+		Image:   string(data.Image),
 		Tags:   input.Tags,
 	}
 

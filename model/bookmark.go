@@ -1,17 +1,18 @@
 package model
 
 import (
-    "time"
-    "bookmark-api/db"
-    "gorm.io/gorm"
+	"time"
+	"bookmark-api/db"
+	"gorm.io/gorm"
 )
 
 type Bookmark struct {
 	ID        uint      `gorm:"primaryKey"`
-	UserID    uint      `gorm:"not null"`
+	UserID    uint      `gorm:"not null;constraint:OnDelete:CASCADE"`
 	URL       string    `gorm:"not null"`
 	Title     string
 	Notes     string
+	Image     string    
 	Tags      []string  `gorm:"type:text[]"`
 	CreatedAt time.Time
 }
@@ -36,29 +37,29 @@ func DeleteBookmark(userID, id uint) error {
 }
 
 func UpdateBookmark(userID, id uint, updates map[string]interface{}) (*Bookmark, error) {
-    database := db.GetDB()
+	database := db.GetDB()
 
-    if len(updates) == 0 {
-        var current Bookmark
-        if err := database.Where("id = ? AND user_id = ?", id, userID).First(&current).Error; err != nil {
-            return nil, err
-        }
-        return &current, nil
-    }
+	if len(updates) == 0 {
+		var current Bookmark
+		if err := database.Where("id = ? AND user_id = ?", id, userID).First(&current).Error; err != nil {
+			return nil, err
+		}
+		return &current, nil
+	}
 
-    result := database.Model(&Bookmark{}).
-        Where("id = ? AND user_id = ?", id, userID).
-        Updates(updates)
-    if result.Error != nil {
-        return nil, result.Error
-    }
-    if result.RowsAffected == 0 {
-        return nil, gorm.ErrRecordNotFound
-    }
+	result := database.Model(&Bookmark{}).
+		Where("id = ? AND user_id = ?", id, userID).
+		Updates(updates)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
 
-    var updated Bookmark
-    if err := database.Where("id = ? AND user_id = ?", id, userID).First(&updated).Error; err != nil {
-        return nil, err
-    }
-    return &updated, nil
+	var updated Bookmark
+	if err := database.Where("id = ? AND user_id = ?", id, userID).First(&updated).Error; err != nil {
+		return nil, err
+	}
+	return &updated, nil
 }
