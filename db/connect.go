@@ -20,11 +20,12 @@ func Connect() {
 	dbname := os.Getenv("DB_DBNAME")
 	sslmode := os.Getenv("DB_SSLMODE")
 
-	dsn := "host=localhost user=myuser password=mypass dbname=mydb port=5432 sslmode=disable"
+	//dsn := "host=localhost user=myuser password=mypass dbname=mydb port=5432 sslmode=disable"
+	dsn := ""
 
 	if dsn == "" {
 		dsn_l := os.Getenv("DATABASE_URL")
-		if dsn == "" {
+		if dsn_l == "" {
 			dsn_l = fmt.Sprintf(
 				"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 				host, port, user, password, dbname, sslmode,
