@@ -21,9 +21,9 @@ func (bookmark *Bookmark) CreateBookmark() (Bookmark, error) {
 	database := db.GetDB()
 	result := database.Create(bookmark)
 	if result.Error != nil {
-		return nil, result.Error
+		return Bookmark{}, result.Error
 	}
-	return result, nil
+	return *bookmark, nil
 }
 
 func GetBookmarks(userID uint) ([]Bookmark, error) {

@@ -15,6 +15,7 @@ func CreateBookmark(w http.ResponseWriter, r *http.Request) {
 		Notes string   `json:"notes"`
 		Tags  []string `json:"tags"`
 	}
+
 	var input createBookmarkRequest
 	userID, ok := middleware.UserIDFromContext(r)
 	if !ok {
@@ -29,8 +30,8 @@ func CreateBookmark(w http.ResponseWriter, r *http.Request) {
 
 	data, err := util.ExtractData(input.URL)
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Failed to fetch url", http.StatusBadRequest)
+		fmt.Println("Error extracting data:", err)
+		http.Error(w, "Failed to fetch URL metadata", http.StatusBadRequest)
 		return
 	}
 
@@ -39,21 +40,25 @@ func CreateBookmark(w http.ResponseWriter, r *http.Request) {
 		URL:    input.URL,
 		Title:  data.Title,
 		Notes:  input.Notes,
-		Image:   string(data.Image),
+		Image:  data.Image, 
 		Tags:   input.Tags,
 	}
 
-	result, err = bookmark.CreateBookmark()
-
+	result, err := bookmark.CreateBookmark()
 	if err != nil {
+		fmt.Println("Database error:", err)
 		http.Error(w, "Failed to create bookmark", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(result)
+
+	if err := json.NewEncoder(w).Encode(result); err != nil {
+		fmt.Println("JSON encode error:", err)
+	}
 }
+
 
 func GetBookmarks(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.UserIDFromContext(r)
