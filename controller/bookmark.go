@@ -43,14 +43,16 @@ func CreateBookmark(w http.ResponseWriter, r *http.Request) {
 		Tags:   input.Tags,
 	}
 
-	if err := bookmark.CreateBookmark(); err != nil {
+	result, err = bookmark.CreateBookmark()
+
+	if err != nil {
 		http.Error(w, "Failed to create bookmark", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{"status": "bookmark successfully created"})
+	json.NewEncoder(w).Encode(result)
 }
 
 func GetBookmarks(w http.ResponseWriter, r *http.Request) {

@@ -17,10 +17,13 @@ type Bookmark struct {
 	CreatedAt time.Time
 }
 
-func (bookmark *Bookmark) CreateBookmark() error {
+func (bookmark *Bookmark) CreateBookmark() (Bookmark, error) {
 	database := db.GetDB()
 	result := database.Create(bookmark)
-	return result.Error
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return result, nil
 }
 
 func GetBookmarks(userID uint) ([]Bookmark, error) {
