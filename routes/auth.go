@@ -5,13 +5,12 @@ import (
 	"bookmark-api/controller"
 )
 
-func AuthRoutes() *http.ServeMux {
+func AuthRoutes(authController *controller.AuthController) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("POST /signup", controller.SignUp)
-	mux.HandleFunc("POST /login", controller.Login)
-	mux.HandleFunc("DELETE /deleteAcc", controller.DeleteAccount)
-	mux.HandleFunc("GET /logout", controller.LogOut)
-	
+	mux.HandleFunc("POST /signup", authController.SignUp)
+	mux.HandleFunc("POST /login", authController.Login)
+	mux.HandleFunc("DELETE /deleteAcc", authController.DeleteAccount)
+
 	return mux
 }

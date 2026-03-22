@@ -10,6 +10,8 @@ import (
 
 type AuthServiceInterface interface {
 	CreateUser(signuprequest domain.SignupRequest) (model.User, error)
+	ValidateUser(signinrequest domain.SigninRequest) (string, error)
+	DeleteUser(userID uint) error
 }
 
 type AuthService struct {
@@ -46,4 +48,43 @@ func (authservice *AuthService) CreateUser(signuprequest domain.SignupRequest) (
 
 	createdUser.Password = "" 
 	return createdUser, nil
+}
+
+
+func (authservice *AuthService) ValidateUser(signinrequest domain.SigninRequest) (string, error) {
+	if signinrequest.Email == "" || signinrequest.Password == "" {
+		return "", domain.ErrInvalidInput
+	}
+
+	user, err := authservice.repo.GetUserByEmail(signinrequest.Email)
+	if err != nil {
+		return "", domain.ErrInvalidCredentials
+	}
+
+	if err := bcrypt.CompareHashAndPassword(
+		[]byte(user.Password),
+		[]byte(signinrequest.Password),
+	); err != nil {
+		return "", domain.ErrInvalidCredentials
+	}
+
+	token, err := utils.GenerateJWT(user.ID)
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
+}
+
+func (authservice *AuthService) DeleteUser(userID uint) error {
+	if userID == 0 {
+		return domain.ErrInvalidInput
+	}
+
+	err := authservice.repo.DeleteUserAccount(userID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

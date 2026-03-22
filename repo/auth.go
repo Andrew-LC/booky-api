@@ -45,6 +45,9 @@ func (repo *UserRepo) GetUserByEmail(email string) (model.User, error) {
 
 	err := repo.db.Where("email = ?", email).First(&user).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return model.User{}, domain.ErrUserNotFound
+		}
 		return model.User{}, err
 	}
 
@@ -56,6 +59,10 @@ func (repo *UserRepo) DeleteUserAccount(userID uint) error {
 
 	if result.Error != nil {
 		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return domain.ErrUserNotFound
 	}
 
 	return nil

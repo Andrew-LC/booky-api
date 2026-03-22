@@ -1,22 +1,25 @@
 package controller
 
 import (
-	"fmt"
 	"errors"
 	"net/http"
 	"encoding/json"
-	"bookmark-api/utils"
-	"bookmark-api/model"
 	"bookmark-api/domain"
 	"bookmark-api/service"
 	middleware "bookmark-api/middlewares"
 )
 
-func WriteJSON(w http.ResponseWriter, status int, data any) error {
+func WriteJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
 
-	return json.NewEncoder(w).Encode(data)
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		http.Error(w, "failed to encode response", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(status)
+	w.Write(jsonData)
 }
 
 type AuthController struct {
@@ -54,50 +57,62 @@ func (controller AuthController) SignUp(w http.ResponseWriter, r *http.Request) 
 }
 
 
-func Login(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Content-Type", "application/json")
-	var creds struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
+func (c *AuthController) Login(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	var creds domain.SigninRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
-		http.Error(w, "Invalid input", http.StatusBadRequest)
+		WriteJSON(w, http.StatusBadRequest, "invalid input")
 		return
 	}
 
-	user := model.GetUserByEmail(creds.Email)
-	if user == nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-		return
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(creds.Password)); err != nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-		return
-	}
-
-	token, err := utils.GenerateJWT(user.ID)
+	token, err := c.service.ValidateUser(creds)
 	if err != nil {
-		http.Error(w, "Server error", http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, domain.ErrInvalidInput):
+			WriteJSON(w, http.StatusBadRequest, err.Error())
+
+		case errors.Is(err, domain.ErrUserNotFound):
+			WriteJSON(w, http.StatusNotFound, err.Error())
+
+		case errors.Is(err, domain.ErrInvalidCredentials):
+			WriteJSON(w, http.StatusUnauthorized, err.Error())
+
+		default:
+			WriteJSON(w, http.StatusInternalServerError, "internal error")
+		}
 		return
 	}
 
-    json.NewEncoder(w).Encode(map[string]string{"token": token})
+	WriteJSON(w, http.StatusOK, map[string]string{
+		"token": token,
+	})
 }
 
-func DeleteAccount(w http.ResponseWriter, r *http.Request) {
+func (c *AuthController) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.UserIDFromContext(r)
 	if !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		WriteJSON(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
-	if err := model.DeleteUserAccount(userID); err != nil {
-		http.Error(w, "Failed to delete account", http.StatusInternalServerError)
+	err := c.service.DeleteUser(userID)
+	if err != nil {
+		switch {
+		case errors.Is(err, domain.ErrInvalidInput):
+			WriteJSON(w, http.StatusBadRequest, err.Error())
+
+		case errors.Is(err, domain.ErrUserNotFound):
+			WriteJSON(w, http.StatusNotFound, err.Error())
+
+		default:
+			WriteJSON(w, http.StatusInternalServerError, "internal error")
+		}
 		return
 	}
-	
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Account deleted")
+
+	WriteJSON(w, http.StatusOK, map[string]string{
+		"message": "account deleted",
+	})
 }

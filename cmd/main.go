@@ -20,7 +20,7 @@ func main() {
 	db.GetDB().AutoMigrate(&model.User{}, &model.Bookmark{})
 
 	mux := http.NewServeMux()
-	routes.Register(mux)
+	routes.Register(mux, db.GetDB())
 	
 	port := os.Getenv("PORT")
 	if port == "" {
