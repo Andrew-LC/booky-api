@@ -5,13 +5,13 @@ import (
 	"bookmark-api/controller"
 )
 
-func BookmarkRoutes() *http.ServeMux {
+func BookmarkRoutes(bookmarkController *controller.BookmarkController) *http.ServeMux {
 	mux := http.NewServeMux()
 	
-	mux.HandleFunc("POST /", controller.CreateBookmark)
-	mux.HandleFunc("GET /", controller.GetBookmarks)
-	mux.HandleFunc("DELETE /{id}", controller.DeleteBookmark)
-	mux.HandleFunc("PUT /{id}", controller.UpdateBookmark)
+	mux.HandleFunc("POST /", bookmarkController.CreateBookmark)
+	mux.HandleFunc("GET /", bookmarkController.GetBookmarks)
+	mux.HandleFunc("DELETE /{id}", bookmarkController.DeleteBookmark)
+	mux.HandleFunc("PUT /{id}", bookmarkController.UpdateBookmark)
 	
 	return mux
 }

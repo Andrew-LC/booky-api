@@ -2,110 +2,104 @@ package controller
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
+	"strconv"
+
 	"bookmark-api/model"
+	"bookmark-api/domain"
+	"bookmark-api/service"
 	middleware "bookmark-api/middlewares"
 	util "bookmark-api/utils"
 )
 
-func CreateBookmark(w http.ResponseWriter, r *http.Request) {
-	type createBookmarkRequest struct {
-		URL   string   `json:"url"`
-		Notes string   `json:"notes"`
-		Tags  []string `json:"tags"`
-	}
+type BookmarkController struct {
+	service service.BookmarkServiceInterface
+}
 
-	var input createBookmarkRequest
+func NewBookmarkController(s service.BookmarkServiceInterface) *BookmarkController {
+	return &BookmarkController{service: s}
+}
+
+
+func (bc *BookmarkController) CreateBookmark(w http.ResponseWriter, r *http.Request) {
+	var input domain.BookmarkRequest
+
 	userID, ok := middleware.UserIDFromContext(r)
 	if !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
+		WriteError(w, http.StatusBadRequest, "Invalid JSON body")
 		return
 	}
 
 	data, err := util.ExtractData(input.URL)
 	if err != nil {
-		fmt.Println("Error extracting data:", err)
-		http.Error(w, "Failed to fetch URL metadata", http.StatusBadRequest)
+		WriteError(w, http.StatusBadRequest, "Failed to fetch URL metadata")
 		return
 	}
 
-	bookmark := model.Bookmark{
+	bookmark := &model.Bookmark{
 		UserID: userID,
 		URL:    input.URL,
 		Title:  data.Title,
 		Notes:  input.Notes,
-		Image:  data.Image, 
+		Image:  data.Image,
 		Tags:   input.Tags,
 	}
 
-	result, err := bookmark.CreateBookmark()
+	result, err := bc.service.CreateBookmark(r.Context(), bookmark)
 	if err != nil {
-		fmt.Println("Database error:", err)
-		http.Error(w, "Failed to create bookmark", http.StatusInternalServerError)
+		WriteError(w, http.StatusInternalServerError, "Failed to create bookmark")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-
-	if err := json.NewEncoder(w).Encode(result); err != nil {
-		fmt.Println("JSON encode error:", err)
-	}
+	WriteJSON(w, http.StatusCreated, result)
 }
 
 
-func GetBookmarks(w http.ResponseWriter, r *http.Request) {
+func (bc *BookmarkController) GetBookmarks(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.UserIDFromContext(r)
 	if !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
-	bookmarks, err := model.GetBookmarks(userID)
+	bookmarks, err := bc.service.GetBookmarks(r.Context(), userID)
 	if err != nil {
-		http.Error(w, "Failed to fetch bookmarks", http.StatusInternalServerError)
+		WriteError(w, http.StatusInternalServerError, "Failed to fetch bookmarks")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(bookmarks)
+	WriteJSON(w, http.StatusOK, bookmarks)
 }
 
 
-func UpdateBookmark(w http.ResponseWriter, r *http.Request) {
-	type updateBookmarkRequest struct {
-		URL   *string   `json:"url"`
-		Title *string   `json:"title"`
-		Notes *string   `json:"notes"`
-		Tags  *[]string `json:"tags"`
-	}
-	var input updateBookmarkRequest
+func (bc *BookmarkController) UpdateBookmark(w http.ResponseWriter, r *http.Request) {
+	var input domain.BookmarkupdateRequest
+
 	userID, ok := middleware.UserIDFromContext(r)
 	if !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	idStr := r.PathValue("id")
-	if idStr == "" {
-		http.Error(w, "Bookmark ID required", http.StatusBadRequest)
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "Invalid bookmark ID")
 		return
 	}
-	var id uint
-	fmt.Sscanf(idStr, "%d", &id)
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
+		WriteError(w, http.StatusBadRequest, "Invalid JSON body")
 		return
 	}
 
 	updates := make(map[string]interface{})
+
 	if input.URL != nil {
 		updates["url"] = *input.URL
 	}
@@ -119,37 +113,37 @@ func UpdateBookmark(w http.ResponseWriter, r *http.Request) {
 		updates["tags"] = *input.Tags
 	}
 
-	updated, err := model.UpdateBookmark(userID, id, updates)
+	updated, err := bc.service.UpdateBookmark(r.Context(), userID, uint(id), updates)
 	if err != nil {
-		http.Error(w, "Failed to update bookmark", http.StatusInternalServerError)
+		WriteError(w, http.StatusInternalServerError, "Failed to update bookmark")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(updated)
+	WriteJSON(w, http.StatusOK, updated)
 }
 
 
-func DeleteBookmark(w http.ResponseWriter, r *http.Request) {
+func (bc *BookmarkController) DeleteBookmark(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.UserIDFromContext(r)
 	if !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	idStr := r.PathValue("id")
-	if idStr == "" {
-		http.Error(w, "Bookmark ID required", http.StatusBadRequest)
-		return
-	}
-	var id uint
-	fmt.Sscanf(idStr, "%d", &id)
-
-	if err := model.DeleteBookmark(userID, id); err != nil {
-		http.Error(w, "Failed to delete bookmark", http.StatusInternalServerError)
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "Invalid bookmark ID") 
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Bookmark %d deleted successfully", id)
+	if err := bc.service.DeleteBookmark(r.Context(), userID, uint(id)); err != nil {
+		WriteError(w, http.StatusInternalServerError, "Failed to delete bookmark")
+		return
+	}
+
+	WriteJSON(w, http.StatusOK, map[string]string{
+		"message": "Bookmark deleted successfully",
+	})
 }
+

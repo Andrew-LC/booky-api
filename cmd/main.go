@@ -20,7 +20,7 @@ func main() {
 	db.GetDB().AutoMigrate(&model.User{}, &model.Bookmark{})
 
 	mux := http.NewServeMux()
-	routes.Register(mux, db.GetDB())
+	handler := routes.Register(mux, db.GetDB())
 	
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -29,13 +29,12 @@ func main() {
 
 	server := &http.Server{
 		Addr:         ":" + port,
-		Handler:      mux,
+		Handler:      handler,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// Graceful shutdown
 	go func() {
 		fmt.Println("Server running on http://localhost:8080")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {

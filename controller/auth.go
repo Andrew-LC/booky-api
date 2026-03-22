@@ -9,19 +9,6 @@ import (
 	middleware "bookmark-api/middlewares"
 )
 
-func WriteJSON(w http.ResponseWriter, status int, data any) {
-	w.Header().Set("Content-Type", "application/json")
-
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		http.Error(w, "failed to encode response", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(status)
-	w.Write(jsonData)
-}
-
 type AuthController struct {
 	service service.AuthServiceInterface
 }
@@ -38,7 +25,7 @@ func (controller AuthController) SignUp(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	user, err := controller.service.CreateUser(creds)
+	user, err := controller.service.CreateUser(r.Context(), creds)
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrInvalidInput):
@@ -67,7 +54,7 @@ func (c *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := c.service.ValidateUser(creds)
+	token, err := c.service.ValidateUser(r.Context(), creds)
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrInvalidInput):
@@ -97,7 +84,7 @@ func (c *AuthController) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := c.service.DeleteUser(userID)
+	err := c.service.DeleteUser(r.Context(), userID)
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrInvalidInput):

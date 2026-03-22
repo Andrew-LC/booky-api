@@ -2,6 +2,7 @@ package repo
 
 import (
 	"errors"
+	"context"
 	"gorm.io/gorm"
 	"bookmark-api/domain"
 	"bookmark-api/model"
@@ -9,9 +10,9 @@ import (
 )
 
 type UserRepository interface {
-	CreateUser(user model.User) (model.User, error)
-	GetUserByEmail(email string) (model.User, error)
-	DeleteUserAccount(userID uint) error
+	CreateUser(ctx context.Context, user model.User) (model.User, error)
+	GetUserByEmail(ctx context.Context, email string) (model.User, error)
+	DeleteUserAccount(ctx context.Context, userID uint) error
 	
 }
 
@@ -23,8 +24,8 @@ func NewUserRepo(db *gorm.DB) UserRepository {
 	return &UserRepo{db: db}
 }
 
-func (repo *UserRepo) CreateUser(user model.User) (model.User, error) {
-	result := repo.db.Create(&user)
+func (repo *UserRepo) CreateUser(ctx context.Context, user model.User) (model.User, error) {
+	result := repo.db.WithContext(ctx).Create(&user)
 
 	if result.Error != nil {
 		var pgErr *pgconn.PgError
@@ -40,10 +41,10 @@ func (repo *UserRepo) CreateUser(user model.User) (model.User, error) {
 	return user, nil
 }
 
-func (repo *UserRepo) GetUserByEmail(email string) (model.User, error) {
+func (repo *UserRepo) GetUserByEmail(ctx context.Context, email string) (model.User, error) {
 	var user model.User
 
-	err := repo.db.Where("email = ?", email).First(&user).Error
+	err := repo.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return model.User{}, domain.ErrUserNotFound
@@ -54,8 +55,8 @@ func (repo *UserRepo) GetUserByEmail(email string) (model.User, error) {
 	return user, nil
 }
 
-func (repo *UserRepo) DeleteUserAccount(userID uint) error {
-	result := repo.db.Delete(&model.User{}, userID)
+func (repo *UserRepo) DeleteUserAccount(ctx context.Context, userID uint) error {
+	result := repo.db.WithContext(ctx).Delete(&model.User{}, userID)
 
 	if result.Error != nil {
 		return result.Error
