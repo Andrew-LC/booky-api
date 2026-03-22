@@ -1,0 +1,11 @@
+** Notes:
+ - Try to design the api with this approach:
+      #+BEGIN_SRC bash
+        Controller → Service → Repository → Database
+#+END_SRC
+- The core working is that:
+  1. Controller: Handles http requests
+  2. Service: What happens logically for the requests
+  3. Repository: This talks to the database
+- This is for separation of logic and to maintain testability
+ 

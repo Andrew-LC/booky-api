@@ -5,33 +5,34 @@ import (
 	"log"
 	"os"
 	"time"
-
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
+func getEnv(envName string, fallback string) string {
+	if value := os.Getenv(envName); value != "" {
+		return value
+	} 
+	return fallback
+}
+
 var DB *gorm.DB
 
 func Connect() {
-	host := os.Getenv("DB_HOST")
-	port := os.Getenv("DB_PORT")
-	user := os.Getenv("DB_USER")
-	password := os.Getenv("DB_PASSWORD")
-	dbname := os.Getenv("DB_DBNAME")
-	sslmode := os.Getenv("DB_SSLMODE")
-
-	//dsn := "host=localhost user=myuser password=mypass dbname=mydb port=5432 sslmode=disable"
-	dsn := ""
+	dsn := os.Getenv("DATABASE_URL")
 
 	if dsn == "" {
-		dsn_l := os.Getenv("DATABASE_URL")
-		if dsn_l == "" {
-			dsn_l = fmt.Sprintf(
-				"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-				host, port, user, password, dbname, sslmode,
-			)
-		}	
-		dsn = dsn_l
+		host := getEnv("DB_HOST", "localhost")
+		port := getEnv("DB_PORT", "5432")
+		user := getEnv("DB_USER", "myuser")
+		password := getEnv("DB_PASSWORD", "mypass")
+		dbname := getEnv("DB_DBNAME", "mydb")
+		sslmode := getEnv("DB_SSLMODE", "disable")
+
+		dsn = fmt.Sprintf(
+			"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+			host, port, user, password, dbname, sslmode,
+		)
 	}
 
 

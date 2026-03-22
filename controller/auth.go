@@ -2,44 +2,55 @@ package controller
 
 import (
 	"fmt"
+	"errors"
 	"net/http"
 	"encoding/json"
 	"bookmark-api/utils"
 	"bookmark-api/model"
-        "golang.org/x/crypto/bcrypt"
+	"bookmark-api/domain"
+	"bookmark-api/service"
 	middleware "bookmark-api/middlewares"
 )
 
-func SignUp(w http.ResponseWriter, r *http.Request) {
+func WriteJSON(w http.ResponseWriter, status int, data any) error {
 	w.Header().Set("Content-Type", "application/json")
-	var creds struct {
-		Email string `json:"email"`
-		Password string `json:"password"`
-	}
+	w.WriteHeader(status)
+
+	return json.NewEncoder(w).Encode(data)
+}
+
+type AuthController struct {
+	service service.AuthServiceInterface
+}
+
+func NewAuthController(s service.AuthServiceInterface) *AuthController {
+	return &AuthController{service: s}
+}
+
+func (controller AuthController) SignUp(w http.ResponseWriter, r *http.Request) {
+	var creds domain.SignupRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
 		http.Error(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(creds.Password),  bcrypt.DefaultCost)
+	user, err := controller.service.CreateUser(creds)
 	if err != nil {
-		http.Error(w, "Server Error",  http.StatusInternalServerError)
-	}
+		switch {
+		case errors.Is(err, domain.ErrInvalidInput):
+			WriteJSON(w, http.StatusBadRequest, err.Error())
 
-	user := model.User{
-		Username: utils.GenerateUsername(creds.Email),
-		Email: creds.Email,
-		Password: string(hashedPassword),
-	}
+		case errors.Is(err, domain.ErrEmailExists):
+			WriteJSON(w, http.StatusConflict, err.Error())
 
-	if err := user.CreateUser(); err != nil {
-		http.Error(w, "Could not create user", http.StatusInternalServerError)
+		default:
+			WriteJSON(w, http.StatusInternalServerError, "internal error")
+		}
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{"message": "User created"})
+	WriteJSON(w, http.StatusCreated, user)
 }
 
 
@@ -89,8 +100,4 @@ func DeleteAccount(w http.ResponseWriter, r *http.Request) {
 	
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Account deleted")
-}
-
-func LogOut(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "loggin you out")
 }

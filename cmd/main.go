@@ -7,12 +7,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	middleware "bookmark-api/middlewares"
 	"bookmark-api/db"
 	"bookmark-api/model"
 	"bookmark-api/routes"
 	"time"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 
@@ -22,14 +20,8 @@ func main() {
 	db.GetDB().AutoMigrate(&model.User{}, &model.Bookmark{})
 
 	mux := http.NewServeMux()
+	routes.Register(mux)
 	
-	authMux := routes.AuthRoutes()
-	bookmarkMux := routes.BookmarkRoutes()
-
-	mux.Handle("/auth/", http.StripPrefix("/auth", authMux))
-	mux.Handle("/bookmark/", http.StripPrefix("/bookmark", middleware.JWTMiddleware(bookmarkMux)))
-	mux.Handle("/metrics", promhttp.Handler())
-
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080" 
