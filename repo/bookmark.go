@@ -13,6 +13,7 @@ type BookmarkRepository interface {
 	GetBookmarks(ctx context.Context, userID uint) ([]model.Bookmark, error)
 	DeleteBookmark(ctx context.Context, userID, id uint) error
 	UpdateBookmark(ctx context.Context, userID, id uint, updates map[string]interface{}) (*model.Bookmark, error)
+	UpdateMeta(ctx context.Context, id uint, title, image string) error
 }
 
 type BookmarkRepo struct {
@@ -76,4 +77,14 @@ func (b *BookmarkRepo) UpdateBookmark(ctx context.Context, userID, id uint, upda
 	}
 
 	return &bookmark, nil
+}
+
+
+func (b *bookmarkRepo) UpdateMeta(ctx context.Context, id uint, title, image string) error {
+    return r.db.WithContext(ctx).Model(&model.Bookmark{}).
+        Where("id = ?", id).
+        Updates(map[string]interface{}{
+            "title": title,
+            "image": image,
+        }).Error
 }

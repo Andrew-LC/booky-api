@@ -11,6 +11,7 @@ type BookmarkServiceInterface interface {
 	GetBookmarks(ctx context.Context, userID uint) ([]model.Bookmark, error)
 	DeleteBookmark(ctx context.Context, userID, id uint) error
 	UpdateBookmark(ctx context.Context, userID, id uint, updates map[string]interface{}) (*model.Bookmark, error)
+	UpdateBookmarkMeta(ctx context.Context, id uint, title, image string) error
 }
 
 type BookmarkService struct {
@@ -35,4 +36,8 @@ func (b *BookmarkService) DeleteBookmark(ctx context.Context, userID, id uint) e
 
 func (b *BookmarkService) UpdateBookmark(ctx context.Context, userID, id uint, updates map[string]interface{}) (*model.Bookmark, error) {
 	return b.repo.UpdateBookmark(ctx, userID, id, updates)
+}
+
+func (b *bookmarkService) UpdateBookmarkMeta(ctx context.Context, id uint, title, image string) error {
+	return b.repo.UpdateMeta(ctx, id, title, image)
 }

@@ -46,9 +46,9 @@ func Connect() {
 	if err != nil {
 		log.Fatalf("Failed to get sql DB: %v", err)
 	}
-	sqlDB.SetMaxOpenConns(20)
-	sqlDB.SetMaxIdleConns(5)
-	sqlDB.SetConnMaxLifetime(30 * time.Minute)
+	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetMaxIdleConns(25)
+	sqlDB.SetConnMaxLifetime(5 * time.Minute)
 
 	DB = database
 	log.Println("Connected to PostgreSQL")

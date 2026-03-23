@@ -1,6 +1,9 @@
 package model
 
-import "time"
+import (
+	"time"
+	"github.com/lib/pq"
+)
 
 type Bookmark struct {
 	ID        uint      `gorm:"primaryKey"`
@@ -9,7 +12,7 @@ type Bookmark struct {
 	Title     string
 	Notes     string
 	Image     string    
-	Tags      []string  `gorm:"type:text[]"`
+	Tags   pq.StringArray `gorm:"type:text[]"`  //
 	CreatedAt time.Time
 }
 

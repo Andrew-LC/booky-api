@@ -22,41 +22,39 @@ func NewBookmarkController(s service.BookmarkServiceInterface) *BookmarkControll
 
 
 func (bc *BookmarkController) CreateBookmark(w http.ResponseWriter, r *http.Request) {
-	var input domain.BookmarkRequest
+    var input domain.BookmarkRequest
+    userID, ok := middleware.UserIDFromContext(r)
+    if !ok {
+        WriteError(w, http.StatusUnauthorized, "Unauthorized")
+        return
+    }
+    if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+        WriteError(w, http.StatusBadRequest, "Invalid JSON body")
+        return
+    }
 
-	userID, ok := middleware.UserIDFromContext(r)
-	if !ok {
-		WriteError(w, http.StatusUnauthorized, "Unauthorized")
-		return
-	}
+    bookmark := &model.Bookmark{
+        UserID: userID,
+        URL:    input.URL,
+        Notes:  input.Notes,
+        Tags:   input.Tags,
+        Title:  input.URL, 
+    }
+    result, err := bc.service.CreateBookmark(r.Context(), bookmark)
+    if err != nil {
+        WriteError(w, http.StatusInternalServerError, "Failed to create bookmark")
+        return
+    }
 
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		WriteError(w, http.StatusBadRequest, "Invalid JSON body")
-		return
-	}
+    go func(id uint, url string) {
+        data, err := util.ExtractData(url)
+        if err != nil {
+            return
+        }
+        bc.service.UpdateBookmarkMeta(context.Background(), id, data.Title, data.Image)
+    }(result.ID, input.URL)
 
-	data, err := util.ExtractData(input.URL)
-	if err != nil {
-		WriteError(w, http.StatusBadRequest, "Failed to fetch URL metadata")
-		return
-	}
-
-	bookmark := &model.Bookmark{
-		UserID: userID,
-		URL:    input.URL,
-		Title:  data.Title,
-		Notes:  input.Notes,
-		Image:  data.Image,
-		Tags:   input.Tags,
-	}
-
-	result, err := bc.service.CreateBookmark(r.Context(), bookmark)
-	if err != nil {
-		WriteError(w, http.StatusInternalServerError, "Failed to create bookmark")
-		return
-	}
-
-	WriteJSON(w, http.StatusCreated, result)
+    WriteJSON(w, http.StatusCreated, result)
 }
 
 

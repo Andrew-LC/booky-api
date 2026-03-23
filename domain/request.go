@@ -1,5 +1,7 @@
 package domain
 
+import "github.com/lib/pq"
+
 type SignupRequest struct {
 	Email string `json:"email"`
 	Password string `json:"password"`
@@ -21,5 +23,5 @@ type BookmarkupdateRequest struct {
 	URL   *string   `json:"url"`
 	Title *string   `json:"title"`
 	Notes *string   `json:"notes"`
-	Tags  *[]string `json:"tags"`
+	Tags  pq.StringArray `json:"tags"`
 }
