@@ -38,6 +38,6 @@ func (b *BookmarkService) UpdateBookmark(ctx context.Context, userID, id uint, u
 	return b.repo.UpdateBookmark(ctx, userID, id, updates)
 }
 
-func (b *bookmarkService) UpdateBookmarkMeta(ctx context.Context, id uint, title, image string) error {
+func (b *BookmarkService) UpdateBookmarkMeta(ctx context.Context, id uint, title, image string) error {
 	return b.repo.UpdateMeta(ctx, id, title, image)
 }
