@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"context"
 	"bookmark-api/model"
 	"bookmark-api/domain"
 	"bookmark-api/service"
@@ -108,7 +109,7 @@ func (bc *BookmarkController) UpdateBookmark(w http.ResponseWriter, r *http.Requ
 		updates["notes"] = *input.Notes
 	}
 	if input.Tags != nil {
-		updates["tags"] = *input.Tags
+		updates["tags"] = input.Tags
 	}
 
 	updated, err := bc.service.UpdateBookmark(r.Context(), userID, uint(id), updates)
