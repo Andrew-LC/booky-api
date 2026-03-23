@@ -12,7 +12,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go binary
-RUN go build -o main .
+RUN go build -o main ./cmd/
 
 # --- Stage 2: Create minimal runtime image ---
 FROM alpine:latest

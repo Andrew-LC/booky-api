@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "go-api"
+    static_configs:
+      - targets: ["go-api:8080"]   # service name if using docker-compose

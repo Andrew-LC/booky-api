@@ -3,6 +3,7 @@ package routes
 import (
 	"net/http"
 
+	"bookmark-api/metrics"
 	"gorm.io/gorm"
 	"bookmark-api/repo"
 	"bookmark-api/service"
@@ -12,6 +13,8 @@ import (
 )
 
 func Register(mux *http.ServeMux, db *gorm.DB) http.Handler {
+	metrics.Init()
+
 	authRepo := repo.NewUserRepo(db)
 	authService := service.NewAuthService(authRepo)
 	authController := controller.NewAuthController(authService)
@@ -30,5 +33,5 @@ func Register(mux *http.ServeMux, db *gorm.DB) http.Handler {
 	)
 	mux.Handle("/metrics", promhttp.Handler())
 
-	return middleware.LoggingMiddleware(mux)
+	return middleware.MetricsMiddleware(middleware.LoggingMiddleware(mux))
 }

@@ -2,17 +2,17 @@ package utils
 
 import (
 	"time"
-    "os"
+	"os"
 	"github.com/golang-jwt/jwt/v5"
 )
 
 var JwtKey = []byte(getJWTSecret())
 
 func getJWTSecret() string {
-    if v := os.Getenv("JWT_SECRET"); v != "" {
-        return v
-    }
-    return "my_secret_key"
+	if v := os.Getenv("JWT_SECRET"); v != "" {
+		return v
+	}
+	return "my_secret_key"
 }
 
 type Claims struct {
@@ -27,8 +27,8 @@ func GenerateJWT(userID uint) (string, error) {
 		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
-            Issuer:    os.Getenv("JWT_ISSUER"),
-            Subject:   "access-token",
+			Issuer:    os.Getenv("JWT_ISSUER"),
+			Subject:   "access-token",
 		},
 	}
 
