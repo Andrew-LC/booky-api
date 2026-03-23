@@ -8,6 +8,7 @@ require (
 	github.com/go-shiori/go-readability v0.0.0-20250217085726-9f5bf5ca7612
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/jackc/pgconn v1.14.3
+	github.com/lib/pq v1.12.0
 	github.com/prometheus/client_golang v1.23.2
 	golang.org/x/crypto v0.43.0
 	gorm.io/driver/postgres v1.6.0
